@@ -8,6 +8,7 @@ CH9434::CH9434(SPIClass &spiClass, uint32_t xtFreqArg, bool pllEnabledArg, uint8
   xtFreq = xtFreqArg;
   pllEnabled = pllEnabledArg;
   clkDivNum = clkDivNumArg;
+  isNeedSyncTo = false;
 }
 
 bool CH9434::begin(uint8_t ss, int8_t sck, int8_t miso, int8_t mosi){
@@ -49,6 +50,10 @@ void CH9434::wakeUp(){
   ::digitalWrite(cs,HIGH);
   delayMicroseconds(2);
   ::digitalWrite(cs,LOW);
+}
+
+uint32_t CH9434::getSysFreq(){
+  return sysFreq;
 }
 
 void CH9434::pinMode(uint8_t gpio_idx,int8_t mode){
@@ -103,8 +108,42 @@ uint8_t CH9434::digitalRead(uint8_t gpio_idx){
   return (pin_val_reg>>(gpio_idx%8))&1;
 }
 
-uint32_t CH9434::getSysFreq(){
-  return sysFreq;
+void CH9434::digitalWriteBuffer(uint8_t gpio_idx,uint8_t out_val){
+  switch(out_val){
+    case HIGH:
+      gpioValue |= (1<<gpio_idx);
+      isNeedSyncTo = true;
+    break;
+    case LOW:
+      gpioValue &= ~(1<<gpio_idx);
+      isNeedSyncTo = true;
+    break;
+    default:
+    break;
+  }
+}
+
+uint8_t CH9434::digitalReadBuffer(uint8_t gpio_idx){
+  return (gpioValue>>gpio_idx)&1;
+}
+
+void CH9434::syncTo(){
+  if(isNeedSyncTo){
+    uint8_t *pGPIOValue = (uint8_t *)&gpioValue;
+    writeRegister(CH9434_GPIO_PIN_VAL+0, *(pGPIOValue+0));
+    writeRegister(CH9434_GPIO_PIN_VAL+1, *(pGPIOValue+1));
+    writeRegister(CH9434_GPIO_PIN_VAL+2, *(pGPIOValue+2));
+    writeRegister(CH9434_GPIO_PIN_VAL+3, *(pGPIOValue+3));
+    isNeedSyncTo = false;
+  }
+}
+
+void CH9434::syncFrom(){
+  uint8_t *pGPIOValue = (uint8_t *)&gpioValue;
+  *(pGPIOValue+0) = readRegister(CH9434_GPIO_PIN_VAL+0);
+  *(pGPIOValue+1) = readRegister(CH9434_GPIO_PIN_VAL+1);
+  *(pGPIOValue+2) = readRegister(CH9434_GPIO_PIN_VAL+2);
+  *(pGPIOValue+3) = readRegister(CH9434_GPIO_PIN_VAL+3);
 }
 
 /*************************Private***************************/

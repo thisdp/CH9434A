@@ -111,11 +111,16 @@ public:
   bool begin(uint8_t ss, int8_t sck = -1, int8_t miso = -1, int8_t mosi = -1);
   void sleep();
   void wakeUp();
+  uint32_t getSysFreq();
   /********************************GPIO***********************************************/
   void pinMode(uint8_t gpio_idx,int8_t mode);
   void digitalWrite(uint8_t gpio_idx,uint8_t out_val);
   uint8_t digitalRead(uint8_t gpio_idx);
-  uint32_t getSysFreq();
+  /*****************************GPIO Buffer*******************************************/
+  void digitalWriteBuffer(uint8_t gpio_idx,uint8_t out_val);
+  uint8_t digitalReadBuffer(uint8_t gpio_idx);
+  void syncTo();
+  void syncFrom();
 
 private:
   void setGPIOEnabled(uint8_t gpio_idx, uint8_t enabled); //GPIO使能
@@ -129,6 +134,7 @@ private:
   uint8_t readRegister(uint8_t reg);
   void writeRegister(uint8_t reg, uint8_t data);
 
+  bool isNeedSyncTo;
   SPIClass *spi;
   uint8_t cs;
   //定义外部晶振频率，记录外部晶振频率，当使用外部晶振时记录，调用CH9434OscXtFreqSet修改
