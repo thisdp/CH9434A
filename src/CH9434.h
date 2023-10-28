@@ -113,6 +113,9 @@ public:
   void wakeUp();
   uint32_t getSysFreq();
   /********************************GPIO***********************************************/
+  /*GPIO7  没有输入模式，慎用*/
+  /*GPIO15 没有输出模式，慎用*/
+  /*GPIO23 没有输出模式，慎用*/
   void pinMode(uint8_t gpio_idx,int8_t mode);
   void digitalWrite(uint8_t gpio_idx,uint8_t out_val);
   uint8_t digitalRead(uint8_t gpio_idx);
