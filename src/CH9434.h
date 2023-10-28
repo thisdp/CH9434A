@@ -2,6 +2,10 @@
 #include <Arduino.h>
 #include <SPI.h>
 
+/* -----------------------------------------------------------------------------
+ *                                   宏定义
+ * -----------------------------------------------------------------------------
+ */
 /* 寄存器操作 */
 #define CH9434_REG_OP_WRITE             0x80
 #define CH9434_REG_OP_READ              0x00
@@ -59,6 +63,20 @@
 #define CH9434_UART_FIFO_MODE_512       1         //512
 #define CH9434_UART_FIFO_MODE_1024      2         //1024
 #define CH9434_UART_FIFO_MODE_1280      3         //1280
+/* Character Size */
+#define CH9434_UART_5_BITS_PER_CHAR     5
+#define CH9434_UART_6_BITS_PER_CHAR     6
+#define CH9434_UART_7_BITS_PER_CHAR     7
+#define CH9434_UART_8_BITS_PER_CHAR     8
+/* Stop Bits */
+#define CH9434_UART_ONE_STOP_BIT        1
+#define CH9434_UART_TWO_STOP_BITS       2
+/* Parity settings */
+#define CH9434_UART_NO_PARITY           0x00                              //无校验
+#define CH9434_UART_ODD_PARITY          0x01                              //奇校验
+#define CH9434_UART_EVEN_PARITY         0x02                              //偶校验
+#define CH9434_UART_MARK_PARITY         0x03                              //置1 mark
+#define CH9434_UART_SPACE_PARITY        0x04                              //空白0 SPACE
 
 /* TNOW序号 */
 #define CH9434_TNOW_POLAR_NORMAL        0                                 //正常输出
@@ -73,6 +91,7 @@
 #define CH9434_LOWPOWER_INVALID         0
 #define CH9434_LOWPOWER_SLEEP           1
 
+
 /*
 一、芯片时钟配置相关说明：
 1.外部晶振：32M
@@ -85,7 +104,7 @@
 2.32*15/13=36.923M -> 串口基准时钟计算波特率：36.923M/8/波特率 （如波特率：921600）
 */
 
-class SPISerial;
+class CH9434Serial;
 class CH9434{
 public:
   CH9434(SPIClass &spiClass, uint32_t xtFreqArg = 32000000, bool pllEnabledArg = false, uint8_t clkDivNumArg = 15);
@@ -123,13 +142,13 @@ private:
   bool pllEnabled; //倍频功能使能，倍频系数固定15
   uint8_t clkDivNum; //分频系数
 
-  friend class SPISerial;
+  friend class CH9434Serial;
 };
 
-class SPISerial: public Stream{
+class CH9434Serial: public Stream{
 public:
-  SPISerial(CH9434 *masterControllerArg, uint8_t uartIndexArg);
-  SPISerial(CH9434 &masterControllerArg, uint8_t uartIndexArg);
+  CH9434Serial(CH9434 *masterControllerArg, uint8_t uartIndexArg);
+  CH9434Serial(CH9434 &masterControllerArg, uint8_t uartIndexArg);
   size_t write(uint8_t data);
   size_t write(uint8_t *data, uint16_t length);
   int available();

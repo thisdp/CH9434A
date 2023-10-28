@@ -19,7 +19,6 @@ bool CH9434::begin(uint8_t ss, int8_t sck, int8_t miso, int8_t mosi){
   spi->beginTransaction(settings);
   uint8_t clk_ctrl_reg = 0;
   if(pllEnabled) clk_ctrl_reg |= (1<<7);
-  //if(xtEnabled) clk_ctrl_reg |= (1<<6);
   clk_ctrl_reg |= (clkDivNum&0x1f);
   /* 计算当前的串口基准时钟 */
   uint32_t targetSysFreq = 32000000;
@@ -178,32 +177,32 @@ void CH9434::writeRegister(uint8_t reg, uint8_t data){
 
 
 /*********************************************************************串口********************************************************************/
-SPISerial::SPISerial(CH9434 *masterControllerArg, uint8_t uartIndexArg){
+CH9434Serial::CH9434Serial(CH9434 *masterControllerArg, uint8_t uartIndexArg){
   master = masterControllerArg;
   uartIndex = uartIndexArg;
   peekedDataAvailable = 0;
 }
 
-SPISerial::SPISerial(CH9434 &masterControllerArg, uint8_t uartIndexArg){
+CH9434Serial::CH9434Serial(CH9434 &masterControllerArg, uint8_t uartIndexArg){
   master = &masterControllerArg;
   uartIndex = uartIndexArg;
 }
 
-size_t SPISerial::write(uint8_t data){
+size_t CH9434Serial::write(uint8_t data){
   setTxFIFOData(data);
   return 0;
 }
 
-size_t SPISerial::write(uint8_t *data, uint16_t length){
+size_t CH9434Serial::write(uint8_t *data, uint16_t length){
   setTxFIFOData(data,length);
   return 0;
 }
 
-int SPISerial::available(){
+int CH9434Serial::available(){
   return getRxFIFOLength();
 }
 
-int SPISerial::read(){
+int CH9434Serial::read(){
   if(peekedDataAvailable){
     peekedDataAvailable = false;
     return peekedData;
@@ -211,7 +210,7 @@ int SPISerial::read(){
   return getRxFIFOData();
 }
 
-int SPISerial::peek(){
+int CH9434Serial::peek(){
   if(!peekedDataAvailable){
     peekedData = read();
     peekedDataAvailable = true;
@@ -219,7 +218,7 @@ int SPISerial::peek(){
   return peekedData;
 }
 
-bool SPISerial::begin(unsigned long baud, uint32_t config){
+bool CH9434Serial::begin(unsigned long baud, uint32_t config){
   uint8_t dataBits = 8;
   uint8_t verifyBits = CH9434_UART_NO_PARITY;
   uint8_t stopBits = 1;
@@ -264,7 +263,7 @@ bool SPISerial::begin(unsigned long baud, uint32_t config){
 * 输出: 无
 * 返回: 无
 *************************************************/
-void SPISerial::setParameters(uint32_t bps,uint8_t data_bits,uint8_t veri_bits,uint8_t stop_bits){
+void CH9434Serial::setParameters(uint32_t bps,uint8_t data_bits,uint8_t veri_bits,uint8_t stop_bits){
   uint32_t x = ( ( 10*master->getSysFreq()/8/bps ) + 5 ) / 10;	
   uint8_t uart_reg_dll = x&0xff;
   uint8_t uart_reg_dlm = (x>>8)&0xff;
@@ -337,7 +336,7 @@ void SPISerial::setParameters(uint32_t bps,uint8_t data_bits,uint8_t veri_bits,u
 * 输出: 无
 * 返回: 无
 *************************************************/
-void SPISerial::setFIFO(uint8_t fifo_en,uint8_t fifo_level){
+void CH9434Serial::setFIFO(uint8_t fifo_en,uint8_t fifo_level){
   uint8_t uart_reg_fcr = 0;
   if(fifo_en){
     uart_reg_fcr |= 0x01;
@@ -356,7 +355,7 @@ void SPISerial::setFIFO(uint8_t fifo_en,uint8_t fifo_level){
 * 输出: 无
 * 返回: 无
 *************************************************/
-void SPISerial::setIRQ(uint8_t modem,uint8_t line,uint8_t tx,uint8_t rx){
+void CH9434Serial::setIRQ(uint8_t modem,uint8_t line,uint8_t tx,uint8_t rx){
   uint8_t  uart_reg_ier = 0;
   if(modem) uart_reg_ier |= (1<<3);
   if(line)	uart_reg_ier |= (1<<2);
@@ -373,7 +372,7 @@ void SPISerial::setIRQ(uint8_t modem,uint8_t line,uint8_t tx,uint8_t rx){
 * 输出: 无
 * 返回: 无
 *************************************************/
-void SPISerial::setFlowControlEnabled(uint8_t flow_en){
+void CH9434Serial::setFlowControlEnabled(uint8_t flow_en){
   uint8_t uart_reg_mcr = master->readRegister(CH9434_UARTx_MCR_ADD+0x10*uartIndex);
   uart_reg_mcr &=~(1<<5);
   if(flow_en) uart_reg_mcr |= (1<<5);
@@ -386,7 +385,7 @@ void SPISerial::setFlowControlEnabled(uint8_t flow_en){
 * 输出: 无
 * 返回: 无
 *************************************************/
-void SPISerial::enableIRQ(){
+void CH9434Serial::enableIRQ(){
   uint8_t uart_reg_mcr = master->readRegister(CH9434_UARTx_MCR_ADD+0x10*uartIndex);
   uart_reg_mcr |= (1<<3);
   master->writeRegister(CH9434_UARTx_MCR_ADD+0x10*uartIndex, uart_reg_mcr);
@@ -400,7 +399,7 @@ void SPISerial::enableIRQ(){
 * 输出: 无
 * 返回: 无
 *************************************************/
-void SPISerial::setRTSDTR(uint8_t rts_val,uint8_t dtr_val){
+void CH9434Serial::setRTSDTR(uint8_t rts_val,uint8_t dtr_val){
   uint8_t uart_reg_mcr = master->readRegister(CH9434_UARTx_MCR_ADD+0x10*uartIndex);
   if(rts_val) uart_reg_mcr |= (1<<1);
   else        uart_reg_mcr &= ~(1<<1);
@@ -416,7 +415,7 @@ void SPISerial::setRTSDTR(uint8_t rts_val,uint8_t dtr_val){
 * 输出: 无
 * 返回: 无
 *************************************************/
-void SPISerial::writeSRC(uint8_t src_val){
+void CH9434Serial::writeSRC(uint8_t src_val){
   master->writeRegister(CH9434_UARTx_SCR_ADD+0x10*uartIndex, src_val);
 }
 
@@ -426,7 +425,7 @@ void SPISerial::writeSRC(uint8_t src_val){
 * 输出: 无
 * 返回: SRC寄存器值
 *************************************************/
-uint8_t SPISerial::readSRC(){
+uint8_t CH9434Serial::readSRC(){
   uint8_t uart_reg_src = master->readRegister(CH9434_UARTx_SCR_ADD+0x10*uartIndex);
   return uart_reg_src;
 }
@@ -437,7 +436,7 @@ uint8_t SPISerial::readSRC(){
 * 输出: 无
 * 返回: IIR寄存器值
 *************************************************/
-uint8_t SPISerial::readIIR(){
+uint8_t CH9434Serial::readIIR(){
   uint8_t uart_reg_iir = master->readRegister(CH9434_UARTx_IIR_ADD+0x10*uartIndex);
   return uart_reg_iir;
 }
@@ -448,7 +447,7 @@ uint8_t SPISerial::readIIR(){
 * 输出: 无
 * 返回: LSR寄存器值
 *************************************************/
-uint8_t SPISerial::readLSR(){
+uint8_t CH9434Serial::readLSR(){
   uint8_t uart_reg_lsr = master->readRegister(CH9434_UARTx_LSR_ADD+0x10*uartIndex);
   return uart_reg_lsr;
 }
@@ -459,7 +458,7 @@ uint8_t SPISerial::readLSR(){
 * 输出: 无
 * 返回: MSR寄存器值
 *************************************************/
-uint8_t SPISerial::readMSR(){
+uint8_t CH9434Serial::readMSR(){
   uint8_t uart_reg_msr = master->readRegister(CH9434_UARTx_MSR_ADD+0x10*uartIndex);
   return uart_reg_msr;
 }
@@ -470,7 +469,7 @@ uint8_t SPISerial::readMSR(){
 * 输出: 无
 * 返回: 串口接收FIFO的大小
 *************************************************/
-uint16_t SPISerial::getRxFIFOLength(){
+uint16_t CH9434Serial::getRxFIFOLength(){
   master->writeRegister(CH9434_FIFO_CTRL_ADD, uartIndex);
   uint8_t uart_fifo_cnt_l = master->readRegister(CH9434_FIFO_CTRL_L_ADD);
   uint8_t uart_fifo_cnt_h = master->readRegister(CH9434_FIFO_CTRL_H_ADD);
@@ -485,13 +484,13 @@ uint16_t SPISerial::getRxFIFOLength(){
 * 输出: 无
 * 返回: 无
 *************************************************/
-void SPISerial::getRxFIFOData(uint8_t *p_data,uint16_t read_len){
+void CH9434Serial::getRxFIFOData(uint8_t *p_data,uint16_t read_len){
   uint8_t *p_sv_data = p_data;
   for(uint16_t i=0; i<read_len; i++)
     *p_sv_data++ = master->readRegister(CH9434_UARTx_RBR_ADD+0x10*uartIndex);
 }
 
-uint8_t SPISerial::getRxFIFOData(){
+uint8_t CH9434Serial::getRxFIFOData(){
   return master->readRegister(CH9434_UARTx_RBR_ADD+0x10*uartIndex);;
 }
 
@@ -501,7 +500,7 @@ uint8_t SPISerial::getRxFIFOData(){
 * 输出: 无
 * 返回: 当前串口的接收数据长度
 *************************************************/
-uint16_t SPISerial::getTxFIFOLength(){
+uint16_t CH9434Serial::getTxFIFOLength(){
   master->writeRegister(CH9434_FIFO_CTRL_ADD, CH9434_FIFO_CTRL_TR|uartIndex);
   uint8_t uart_fifo_cnt_l = master->readRegister(CH9434_FIFO_CTRL_L_ADD);
   uint8_t uart_fifo_cnt_h = master->readRegister(CH9434_FIFO_CTRL_H_ADD);
@@ -516,13 +515,13 @@ uint16_t SPISerial::getTxFIFOLength(){
 * 输出: 无
 * 返回: 无
 *************************************************/
-void SPISerial::setTxFIFOData(uint8_t *p_data,uint16_t send_len){
+void CH9434Serial::setTxFIFOData(uint8_t *p_data,uint16_t send_len){
   uint8_t *p_sv_data = p_data;
   for(uint16_t i=0; i<send_len; i++)
     master->writeRegister(CH9434_UARTx_RBR_ADD+0x10*uartIndex, *p_sv_data++);
 }
 
-void SPISerial::setTxFIFOData(uint8_t p_data){
+void CH9434Serial::setTxFIFOData(uint8_t p_data){
   master->writeRegister(CH9434_UARTx_RBR_ADD+0x10*uartIndex, p_data);
 }
 
@@ -534,7 +533,7 @@ void SPISerial::setTxFIFOData(uint8_t p_data){
 * 输出: 无
 * 返回: 无
 *************************************************/
-void SPISerial::setTNOW(uint8_t tnow_en,uint8_t polar){
+void CH9434Serial::setTNOW(uint8_t tnow_en,uint8_t polar){
   uint8_t tnow_ctrl_reg = master->readRegister(CH9434_TNOW_CTRL_CFG_ADD);
   if(tnow_en) tnow_ctrl_reg |= (1<<uartIndex);
   else        tnow_ctrl_reg &=~(1<<uartIndex);
